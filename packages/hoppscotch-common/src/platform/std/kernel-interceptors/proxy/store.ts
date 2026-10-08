@@ -1,11 +1,7 @@
 import { ref, readonly, toRaw, type Ref, type DeepReadonly } from "vue"
 import { Service } from "dioc"
 import { Store } from "~/kernel/store"
-import {
-  getDefaultProxyUrl,
-  DEFAULT_HOPP_PROXY_URL,
-  isValidProxyUrl,
-} from "~/helpers/proxyUrl"
+import { getDefaultProxyUrl, fallbackProxyUrl } from "~/helpers/proxyUrl"
 import * as E from "fp-ts/Either"
 
 const STORE_NAMESPACE = "interceptors.proxy.v1"
@@ -37,6 +33,8 @@ async function buildDefaultSettings(): Promise<ProxySettings> {
   }
 }
 
+// [wasl] 프록시 주소는 서버 설정(PROXY_APP_URL)으로 고정한다. 사용자가 바꾸거나(설정 화면 · 다른 탭 · 저장값) 공개 프록시로
+// 떨어지면 서버 쪽 프록시(호출 감사 · 목적지 통제)를 거치지 않는 길이 생긴다 - 예: PC 에서 띄운 proxyscotch 를 가리키는 주소.
 /**
  * Reactive proxy settings store.
  *
@@ -48,7 +46,7 @@ export class KernelInterceptorProxyStore extends Service {
 
   private readonly _settings = ref<ProxySettings>({
     version: "v1",
-    proxyUrl: DEFAULT_HOPP_PROXY_URL,
+    proxyUrl: fallbackProxyUrl(),
     accessToken: import.meta.env.VITE_PROXYSCOTCH_ACCESS_TOKEN ?? "",
   })
 
@@ -79,25 +77,7 @@ export class KernelInterceptorProxyStore extends Service {
       }
 
       await this.loadSettings()
-
-      const watcher = await Store.watch(STORE_NAMESPACE, SETTINGS_KEY)
-      watcher.on("change", async ({ value }: { value?: unknown }) => {
-        if (value) {
-          const storedData = value as StoredData
-          const incomingProxyUrl = storedData.settings?.proxyUrl
-          this._settings.value = {
-            ...this._settings.value,
-            // Only sync user-configurable fields from external changes.
-            // Keep the current value if the incoming one is missing (older
-            // schema) or invalid (another tab wrote junk via a path that
-            // bypassed validation). accessToken stays env-derived.
-            proxyUrl:
-              incomingProxyUrl && isValidProxyUrl(incomingProxyUrl)
-                ? incomingProxyUrl
-                : this._settings.value.proxyUrl,
-          }
-        }
-      })
+      // [wasl] 다른 탭의 변경을 따라가는 Store.watch 는 두지 않는다 - 동기화할 사용자 설정(proxyUrl)이 없다.
     } catch (error) {
       console.error("[ProxyStore] Failed to finish setup:", error)
     } finally {
@@ -124,10 +104,8 @@ export class KernelInterceptorProxyStore extends Service {
       // (e.g. junk left over from before client-side validation existed).
       // Without this, execute() would post requests to an invalid URL.
       const persistedProxyUrl = storedData.settings?.proxyUrl
-      const proxyUrl =
-        persistedProxyUrl && isValidProxyUrl(persistedProxyUrl)
-          ? persistedProxyUrl
-          : defaults.proxyUrl
+      // [wasl] 저장된 값은 쓰지 않고 서버 설정만 쓴다. 다르면 아래에서 덮어쓴다.
+      const proxyUrl = defaults.proxyUrl
       this._settings.value = {
         ...defaults,
         // Only restore user-configurable fields from storage.
@@ -174,22 +152,11 @@ export class KernelInterceptorProxyStore extends Service {
   public async updateSettings(
     patch: Pick<ProxySettings, "proxyUrl">
   ): Promise<void> {
-    // Belt-and-suspenders: the settings UI already gates this, but the
-    // store is a public API any future caller can hit, and execute() uses
-    // proxyUrl directly. Reject invalid input here so the interceptor
-    // can't be silently broken from outside the settings screen.
-    if (!isValidProxyUrl(patch.proxyUrl)) {
-      console.warn(
-        "[ProxyStore] Refused to persist invalid proxy URL:",
-        patch.proxyUrl
-      )
-      return
-    }
-    this._settings.value = {
-      ...this._settings.value,
-      proxyUrl: patch.proxyUrl,
-    }
-    await this.persistSettings()
+    // [wasl] 프록시 주소는 서버 설정으로 고정한다 - 바꾸지 않는다.
+    console.warn(
+      "[ProxyStore] Proxy URL is fixed by the server (PROXY_APP_URL), ignored:",
+      patch.proxyUrl
+    )
   }
 
   /**
