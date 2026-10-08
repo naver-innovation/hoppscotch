@@ -168,6 +168,9 @@ export default defineConfig({
       },
     }),
     VitePWA({
+      // [wasl] 서비스 워커를 끈다(이미 설치된 워커도 스스로 해제한다). 워커의 navigateFallback 이 앞단 인증 프록시
+      // (oauth2-proxy)의 /oauth2/* 이동까지 가로채 캐시된 index.html 을 돌려주므로, 세션 만료 뒤 재로그인이 막힌다.
+      selfDestroying: true,
       useCredentials: true,
       manifest: {
         name: APP_INFO.name,
