@@ -2,6 +2,7 @@ import * as E from "fp-ts/Either"
 import axios from "axios"
 import { BehaviorSubject, Subject } from "rxjs"
 import { Ref, ref, watch } from "vue"
+import IconLogIn from "~icons/lucide/log-in"
 
 import { getService } from "@hoppscotch/common/modules/dioc"
 import {
@@ -31,6 +32,11 @@ async function signInUserWithGithubFB() {
 
 async function signInUserWithGoogleFB() {
   window.location.href = `${import.meta.env.VITE_BACKEND_API_URL}/auth/google`
+}
+
+// [wasl] 범용 OAuth2 로그인 (backend /auth/oidc, OCI IAM Identity Domain 등)
+async function signInUserWithOidcFB() {
+  window.location.href = `${import.meta.env.VITE_BACKEND_API_URL}/auth/oidc`
 }
 
 async function signInUserWithMicrosoftFB() {
@@ -196,6 +202,15 @@ async function sendMagicLink(email: string) {
 }
 
 export const def: AuthPlatformDef = {
+  // [wasl] backend 가 "OIDC:<표시 이름>" 을 주면 Login.vue 가 이 항목을 그 이름의 버튼으로 그린다.
+  additionalLoginItems: [
+    {
+      id: "OIDC",
+      icon: IconLogIn,
+      text: (t) => t("auth.continue_with_auth_provider", { provider: "SSO" }),
+      onClick: signInUserWithOidcFB,
+    },
+  ],
   getCurrentUserStream: () => currentUser$,
   getAuthEventsStream: () => authEvents$,
   getProbableUserStream: () => probableUser$,

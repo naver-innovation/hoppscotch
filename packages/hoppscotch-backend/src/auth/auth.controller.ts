@@ -24,6 +24,7 @@ import { isValidLocalhostRedirectUri } from './redirect-uri.validator';
 import { GoogleSSOGuard } from './guards/google-sso.guard';
 import { GithubSSOGuard } from './guards/github-sso.guard';
 import { MicrosoftSSOGuard } from './guards/microsoft-sso.guard';
+import { OidcSSOGuard } from './guards/oidc-sso.guard';
 import { ThrottlerBehindProxyGuard } from 'src/guards/throttler-behind-proxy.guard';
 import { SkipThrottle } from '@nestjs/throttler';
 import { AUTH_PROVIDER_NOT_SPECIFIED } from 'src/errors';
@@ -169,6 +170,32 @@ export class AuthController {
   @UseGuards(MicrosoftSSOGuard)
   @UseInterceptors(UserLastLoginInterceptor)
   async microsoftAuthRedirect(@Request() req, @Res() res) {
+    const authTokens = await this.authService.generateAuthTokens(req.user.uid);
+    if (E.isLeft(authTokens)) throwHTTPErr(authTokens.left);
+    authCookieHandler(
+      res,
+      authTokens.right,
+      true,
+      req.authInfo.state.redirect_uri,
+      this.configService,
+    );
+  }
+
+  /**
+   ** [wasl] Route to initiate SSO auth via the generic OAuth2 provider (OIDC_*)
+   */
+  @Get('oidc')
+  @UseGuards(OidcSSOGuard)
+  async oidcAuth(@Request() req) {}
+
+  /**
+   ** [wasl] Callback URL for the generic OAuth2 provider
+   */
+  @Get('oidc/callback')
+  @SkipThrottle()
+  @UseGuards(OidcSSOGuard)
+  @UseInterceptors(UserLastLoginInterceptor)
+  async oidcAuthRedirect(@Request() req, @Res() res) {
     const authTokens = await this.authService.generateAuthTokens(req.user.uid);
     if (E.isLeft(authTokens)) throwHTTPErr(authTokens.left);
     authCookieHandler(

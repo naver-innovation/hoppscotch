@@ -12,7 +12,18 @@ export enum ServiceStatus {
   DISABLE = 'DISABLE',
 }
 
-const SYNC_ONLY_VARIABLES = [InfraConfigEnum.PROXY_APP_URL];
+// [wasl] OIDC_* 는 관리 화면에 설정 UI 가 없어 env(차트 values · Vault)를 값의 출처로 둔다.
+const SYNC_ONLY_VARIABLES = [
+  InfraConfigEnum.PROXY_APP_URL,
+  InfraConfigEnum.OIDC_PROVIDER_NAME,
+  InfraConfigEnum.OIDC_CLIENT_ID,
+  InfraConfigEnum.OIDC_CLIENT_SECRET,
+  InfraConfigEnum.OIDC_CALLBACK_URL,
+  InfraConfigEnum.OIDC_SCOPE,
+  InfraConfigEnum.OIDC_AUTH_URL,
+  InfraConfigEnum.OIDC_TOKEN_URL,
+  InfraConfigEnum.OIDC_USERINFO_URL,
+];
 
 type DefaultInfraConfig = {
   name: InfraConfigEnum;
@@ -68,6 +79,15 @@ export function getAuthProviderRequiredKeys(
       InfraConfigEnum.MICROSOFT_CALLBACK_URL,
       InfraConfigEnum.MICROSOFT_SCOPE,
       InfraConfigEnum.MICROSOFT_TENANT,
+    ],
+    [AuthProvider.OIDC]: [
+      InfraConfigEnum.OIDC_CLIENT_ID,
+      InfraConfigEnum.OIDC_CLIENT_SECRET,
+      InfraConfigEnum.OIDC_CALLBACK_URL,
+      InfraConfigEnum.OIDC_SCOPE,
+      InfraConfigEnum.OIDC_AUTH_URL,
+      InfraConfigEnum.OIDC_TOKEN_URL,
+      InfraConfigEnum.OIDC_USERINFO_URL,
     ],
     [AuthProvider.EMAIL]:
       env['INFRA'].MAILER_USE_CUSTOM_CONFIGS === 'true'
@@ -339,6 +359,46 @@ export async function getDefaultInfraConfigs(): Promise<DefaultInfraConfig[]> {
     },
     {
       name: InfraConfigEnum.MICROSOFT_TENANT,
+      value: null,
+      isEncrypted: false,
+    },
+    {
+      name: InfraConfigEnum.OIDC_PROVIDER_NAME,
+      value: null,
+      isEncrypted: false,
+    },
+    {
+      name: InfraConfigEnum.OIDC_CLIENT_ID,
+      value: null,
+      isEncrypted: true,
+    },
+    {
+      name: InfraConfigEnum.OIDC_CLIENT_SECRET,
+      value: null,
+      isEncrypted: true,
+    },
+    {
+      name: InfraConfigEnum.OIDC_CALLBACK_URL,
+      value: null,
+      isEncrypted: false,
+    },
+    {
+      name: InfraConfigEnum.OIDC_SCOPE,
+      value: null,
+      isEncrypted: false,
+    },
+    {
+      name: InfraConfigEnum.OIDC_AUTH_URL,
+      value: null,
+      isEncrypted: false,
+    },
+    {
+      name: InfraConfigEnum.OIDC_TOKEN_URL,
+      value: null,
+      isEncrypted: false,
+    },
+    {
+      name: InfraConfigEnum.OIDC_USERINFO_URL,
       value: null,
       isEncrypted: false,
     },

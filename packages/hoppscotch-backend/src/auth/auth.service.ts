@@ -26,7 +26,7 @@ import { JwtService } from '@nestjs/jwt';
 import { RESTError } from 'src/types/RESTError';
 import { AuthUser, IsAdmin } from 'src/types/AuthUser';
 import { VerificationToken } from 'src/generated/prisma/client';
-import { Origin } from './helper';
+import { AuthProvider, Origin } from './helper';
 import { ConfigService } from '@nestjs/config';
 import { InfraConfigService } from 'src/infra-config/infra-config.service';
 
@@ -387,6 +387,11 @@ export class AuthService {
   }
 
   getAuthProviders() {
-    return this.infraConfigService.getAllowedAuthProviders();
+    // [wasl] 웹 로그인 화면(hoppscotch-common Login.vue)은 OIDC 공급자를 "OIDC:<표시 이름>" 으로 받아 버튼 이름에 쓴다.
+    // 이름 없이 "OIDC" 만 주면 Login.vue 가 같은 버튼을 두 번 그린다.
+    const oidcName = this.configService.get<string>('INFRA.OIDC_PROVIDER_NAME');
+    return this.infraConfigService
+      .getAllowedAuthProviders()
+      .map((p) => (p === AuthProvider.OIDC ? `OIDC:${oidcName || 'SSO'}` : p));
   }
 }
