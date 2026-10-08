@@ -28,22 +28,17 @@ import { useDesktopZoomEffect } from "@hoppscotch/common/composables/desktop-zoo
 
 // Std interceptors
 import { NativeKernelInterceptorService } from "@hoppscotch/common/platform/std/kernel-interceptors/native"
-import { AgentKernelInterceptorService } from "@hoppscotch/common/platform/std/kernel-interceptors/agent"
 import { ProxyKernelInterceptorService } from "@hoppscotch/common/platform/std/kernel-interceptors/proxy"
-import { ExtensionKernelInterceptorService } from "@hoppscotch/common/platform/std/kernel-interceptors/extension"
-import { BrowserKernelInterceptorService } from "@hoppscotch/common/platform/std/kernel-interceptors/browser"
 
 const PLATFORM_CONFIG = {
   web: {
     auth: webAuth,
     instance: webInstance,
-    interceptors: [
-      BrowserKernelInterceptorService,
-      ProxyKernelInterceptorService,
-      AgentKernelInterceptorService,
-      ExtensionKernelInterceptorService,
-    ],
-    defaultInterceptor: "browser",
+    // [wasl] Proxy 인터셉터만 둔다. Browser · Agent · Extension 은 사용자 PC 에서 대상 API 를 직접 불러
+    // 서버 쪽 프록시(호출 감사 · 목적지 통제)를 거치지 않는다. 브라우저에 저장된 예전 선택(browser 등)은
+    // 등록되지 않은 id 라 무시되고 proxy 가 남는다(KernelInterceptorService.setActive).
+    interceptors: [ProxyKernelInterceptorService],
+    defaultInterceptor: "proxy",
     menuItems: stdFooterItems,
     supportItems: stdSupportOptionItems,
     cookiesEnabled: false,
