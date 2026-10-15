@@ -47,7 +47,8 @@ export class OidcStrategy extends PassportStrategy(Strategy, 'oidc') {
 
   /**
    * Microsoft Graph 대신 공급자의 userinfo 를 읽어 passport 프로필 모양으로 바꾼다.
-   * 이메일은 email · preferred_username · sub 중 이메일 형식인 첫 값이다(Identity Domain 은 사용자 이름이 이메일이다).
+   * 이메일은 email · preferred_username · id · sub 중 이메일 형식인 첫 값이다(Identity Domain 은 sub 가, sub 가 UUID 인
+   * 공급자는 로그인 아이디 claim id 가 이메일이다).
    */
   userProfile(
     accessToken: string,
@@ -113,7 +114,7 @@ export class OidcStrategy extends PassportStrategy(Strategy, 'oidc') {
  * userinfo 응답을 passport 프로필로. 이메일이 없으면 emails 를 비워 validate 가 AUTH_EMAIL_NOT_PROVIDED_BY_OAUTH 로 거부한다.
  */
 export function toProfile(info: Record<string, unknown>) {
-  const email = [info.email, info.preferred_username, info.sub].find(
+  const email = [info.email, info.preferred_username, info.id, info.sub].find(
     (v): v is string => typeof v === 'string' && validateEmail(v),
   );
   return {

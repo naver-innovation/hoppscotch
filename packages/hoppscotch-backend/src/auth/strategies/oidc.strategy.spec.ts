@@ -70,6 +70,19 @@ describe('toProfile', () => {
     ]);
   });
 
+  test('uses an email-shaped id claim when sub is a UUID', () => {
+    const p = toProfile({
+      sub: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+      id: 'c@example.com',
+      name: 'C',
+    });
+    expect(p).toMatchObject({
+      id: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+      displayName: 'C',
+      emails: [{ value: 'c@example.com' }],
+    });
+  });
+
   test('leaves emails empty when no claim is an email (validate rejects it)', () => {
     const p = toProfile({ sub: '7c9e6679-7425-40de-944b-e07fc1f90ae7' });
     expect(p.emails).toEqual([]);
